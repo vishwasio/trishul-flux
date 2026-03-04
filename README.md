@@ -13,3 +13,16 @@ Inspired by the Trishul, this system operates on three distinct prongs of contro
 1. **Static Flux (Rate Limiting):** Managing the immediate "flow" of requests using Java 21 Virtual Threads and Redis-backed token buckets to ensure the system doesn't drown during spikes.
 2. **Predictive Flux (AI Telemetry):** Using lightweight SLMs (Small Language Models) to analyze telemetry patterns and see where the "flow" is heading before the traffic arrives.
 3. **Elastic Flux (Infrastructure):** Coordinating the proactive movement of Kubernetes pods on Oracle Cloud Infrastructure (OCI) to match anticipated demand.
+
+## Technical Stack
+- **Runtime:** Java 21 (Leveraging Project Loom / Virtual Threads for high-concurrency I/O)
+- **Framework:** Spring Boot 3.4+ (Observability & Actuator)
+- **Distributed State:** Redis (Lua-scripted atomic rate limiting)
+- **Intelligence:** 4-bit Quantized SLM (running as a sidecar on ARM-based OCI Ampere)
+- **Infrastructure:** Oracle Kubernetes Engine (OKE) & OCI Observability Stack
+
+## Architecture Overview
+- **Service Layer:** Spring Boot microservices handling business logic.
+- **Guard Layer:** Distributed rate limiter intercepting ingress traffic.
+- **Intelligence Layer:** Sidecar SLM analyzing metrics in real-time.
+- **Orchestration:** Custom controller to trigger proactive K8s scaling via OCI APIs.
