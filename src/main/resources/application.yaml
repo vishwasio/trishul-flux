@@ -1,3 +1,27 @@
 spring:
   application:
     name: Trishul-Flux
+
+  # Not loading everything into RAM at once
+  main:
+    lazy-initialization: true
+
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          # Using the ultra-light 0.5B model
+          model: qwen2.5-coder:0.5b
+          # Strict context limit to save RAM
+          num-ctx: 2048
+          temperature: 0.7
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
