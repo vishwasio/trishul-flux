@@ -15,34 +15,34 @@ public class TelemetryScanner {
 
     private final MeterRegistry meterRegistry;
 
-    // Survival Scan: Runs every 10 seconds to keep RAM impact low
     @Scheduled(fixedRate = 10000)
     public void scanSystemPulse() {
         TelemetrySnapshot snapshot = captureSnapshot();
 
-        log.info("Trishul-Flux Perception: [{}] | CPU: {}% | RAM: {}MB | Threads: {}",
+        log.info("Trishul-Flux Perception: [{}] | CPU: {}% | RAM: {}MB | Dropped: {} | Accepted: {}",
                 snapshot.status(),
                 String.format("%.2f", snapshot.cpuUsage() * 100),
                 String.format("%.2f", (double) snapshot.usedMemoryBytes() / 1024 / 1024),
-                snapshot.liveThreads()
+                snapshot.droppedRequests(),
+                snapshot.acceptedRequests()
         );
     }
 
-    /**
-     * Captures a structured snapshot of the current system state.
-     * This is the "Sense" that will be fed into the CHAKRA brain.
-     */
     public TelemetrySnapshot captureSnapshot() {
         double cpu = fetchMetric("system.cpu.usage");
         long mem = fetchMetric("jvm.memory.used").longValue();
         int threads = fetchMetric("jvm.threads.live").intValue();
 
-        // Perception Logic: Define state based on thresholds
+        // Fetch our custom Trishul metrics
+        long dropped = fetchCounter("trishul.limiter.requests", "action", "dropped");
+        long accepted = fetchCounter("trishul.limiter.requests", "action", "accepted");
+
         TelemetrySnapshot.SystemStatus status = TelemetrySnapshot.SystemStatus.HEALTHY;
 
-        if (cpu > 0.85 || threads > 150) {
+        // Logic Update: If we are dropping requests, we aren't fully Healthy
+        if (cpu > 0.85 || dropped > 0) {
             status = TelemetrySnapshot.SystemStatus.CRITICAL;
-        } else if (cpu > 0.60 || threads > 100) {
+        } else if (cpu > 0.60) {
             status = TelemetrySnapshot.SystemStatus.STRESSED;
         }
 
@@ -51,7 +51,9 @@ public class TelemetryScanner {
                 cpu,
                 mem,
                 threads,
-                status
+                status,
+                dropped,
+                accepted
         );
     }
 
@@ -60,8 +62,16 @@ public class TelemetryScanner {
             var meter = meterRegistry.find(metricName).gauge();
             return (meter != null) ? meter.value() : 0.0;
         } catch (Exception e) {
-            log.warn("Failed to fetch metric: {}", metricName);
             return 0.0;
+        }
+    }
+
+    private long fetchCounter(String name, String tagKey, String tagValue) {
+        try {
+            var counter = meterRegistry.find(name).tag(tagKey, tagValue).counter();
+            return (counter != null) ? (long) counter.count() : 0L;
+        } catch (Exception e) {
+            return 0L;
         }
     }
 }
