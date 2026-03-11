@@ -11,22 +11,27 @@ import org.springframework.stereotype.Service;
 public class ReasoningEngine {
 
     private final OllamaClient ollamaClient;
+    private final ChakraResponseParser parser;
 
     /**
-     * Translates a system snapshot into an AI decision.
+     * Translates a system snapshot into a deterministic action.
      */
-    public String decideMitigation(TelemetrySnapshot snapshot) {
+    public ChakraAction decideMitigation(TelemetrySnapshot snapshot) {
         String prompt = constructPrompt(snapshot);
 
-        log.info("Chakra: Reasoning about system state [{}...] ", snapshot.status());
-        return ollamaClient.chat(prompt);
+        log.info("Chakra: Reasoning about system state [{}] ", snapshot.status());
+        String rawResponse = ollamaClient.chat(prompt);
+
+        ChakraAction action = parser.parse(rawResponse);
+        log.info("Chakra: Decision formulated -> {}", action);
+
+        return action;
     }
 
     private String constructPrompt(TelemetrySnapshot snapshot) {
         return String.format(
-                "System Status: %s. Metrics: CPU %d%%, RAM %dMB, Dropped Requests: %d. " +
-                        "Instruction: Based on this, provide a single word action: [SCALE, THROTTLE, or MONITOR]. " +
-                        "Response must be one word only.",
+                "System Status: %s. Metrics: CPU %d%%, RAM %dMB, Dropped: %d. " +
+                        "Instruction: Provide a one-word command: [SCALE, THROTTLE, or MONITOR].",
                 snapshot.status(),
                 (int)(snapshot.cpuUsage() * 100),
                 snapshot.usedMemoryBytes() / 1024 / 1024,
