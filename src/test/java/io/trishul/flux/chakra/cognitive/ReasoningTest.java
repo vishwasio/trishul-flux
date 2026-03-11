@@ -17,7 +17,7 @@ class ReasoningTest {
 
     @Test
     void verifyAiDecisionLogic() {
-        // Mocking a Critical State (High CPU and Dropped Requests)
+        // Mock a Critical State (High CPU and Dropped Requests)
         TelemetrySnapshot criticalSnapshot = new TelemetrySnapshot(
                 Instant.now(),
                 0.95, // 95% CPU
@@ -28,13 +28,14 @@ class ReasoningTest {
                 300
         );
 
-        String decision = reasoningEngine.decideMitigation(criticalSnapshot);
+        // Updated: Changed type from String to ChakraAction
+        ChakraAction decision = reasoningEngine.decideMitigation(criticalSnapshot);
 
         System.out.println("AI Decision for Critical State: " + decision);
 
         assertNotNull(decision);
-        // Let's see if the AI suggests an aggressive action
-        assertTrue(decision.toUpperCase().contains("THROTTLE") ||
-                decision.toUpperCase().contains("SCALE"));
+        // Updated: Checking against the Enum values instead of String contains
+        assertTrue(decision == ChakraAction.THROTTLE || decision == ChakraAction.SCALE,
+                "AI should recommend THROTTLE or SCALE for a CRITICAL state");
     }
 }
