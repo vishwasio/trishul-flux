@@ -1,5 +1,8 @@
 package io.trishul.flux.core.telemetry;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.Instant;
 
 public record TelemetrySnapshot(
