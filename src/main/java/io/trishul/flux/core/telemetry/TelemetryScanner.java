@@ -1,48 +1,69 @@
 package io.trishul.flux.core.telemetry;
 
-import io.micrometer.core.instrument.MeterRegistry;
+import io.trishul.flux.chakra.cognitive.ChakraAction;
+import io.trishul.flux.chakra.cognitive.ChakraOrchestrator;
+import io.trishul.flux.chakra.cognitive.ReasoningEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+//import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.ThreadMXBean;
 import java.time.Instant;
 
 @Slf4j
-@Service
+@Component
 @RequiredArgsConstructor
 public class TelemetryScanner {
 
-    private final MeterRegistry meterRegistry;
+    private final ReasoningEngine reasoningEngine;
+    private final ChakraOrchestrator orchestrator;
 
-    @Scheduled(fixedRate = 10000)
-    public void scanSystemPulse() {
+    @Scheduled(fixedRate = 5000)
+    public void scanSystem() {
+        // 1. Perception
         TelemetrySnapshot snapshot = captureSnapshot();
 
-        log.info("Trishul-Flux Perception: [{}] | CPU: {}% | RAM: {}MB | Dropped: {} | Accepted: {}",
+        log.info("Trishul-Flux Perception: [{}] | CPU: {}% | RAM: {}MB | Threads: {}",
                 snapshot.status(),
                 String.format("%.2f", snapshot.cpuUsage() * 100),
-                String.format("%.2f", (double) snapshot.usedMemoryBytes() / 1024 / 1024),
-                snapshot.droppedRequests(),
-                snapshot.acceptedRequests()
-        );
+                snapshot.usedMemoryBytes() / (1024 * 1024),
+                snapshot.liveThreads());
+
+        // 2. Cognition
+        ChakraAction decision = reasoningEngine.decideMitigation(snapshot);
+        log.info("Trishul-Flux Cognition: AI decided to -> {}", decision);
+
+        // 3. Execution
+        orchestrator.executeAction(decision);
     }
 
-    public TelemetrySnapshot captureSnapshot() {
-        double cpu = fetchMetric("system.cpu.usage");
-        long mem = fetchMetric("jvm.memory.used").longValue();
-        int threads = fetchMetric("jvm.threads.live").intValue();
+    private TelemetrySnapshot captureSnapshot() {
+        // Cast to the specific Sun implementation to get actual CPU load on Windows
+        com.sun.management.OperatingSystemMXBean sunOsBean =
+                (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
-        // Fetch our custom Trishul metrics
-        long dropped = fetchCounter("trishul.limiter.requests", "action", "dropped");
-        long accepted = fetchCounter("trishul.limiter.requests", "action", "accepted");
+        // getCpuLoad() returns 0.0 to 1.0 (e.g., 0.85 = 85%)
+        double cpu = sunOsBean.getCpuLoad();
 
+        // If it's still negative (initialization), default to 0
+        if (cpu < 0) cpu = 0.02;
+
+        long mem = memoryBean.getHeapMemoryUsage().getUsed();
+        long maxMem = memoryBean.getHeapMemoryUsage().getMax();
+        int threads = threadBean.getThreadCount();
+
+        // Logical Thresholds
         TelemetrySnapshot.SystemStatus status = TelemetrySnapshot.SystemStatus.HEALTHY;
 
-        // Logic Update: If we are dropping requests, we aren't fully Healthy
-        if (cpu > 0.85 || dropped > 0) {
+        if (cpu > 0.85 || (double) mem / maxMem > 0.9) {
             status = TelemetrySnapshot.SystemStatus.CRITICAL;
-        } else if (cpu > 0.60) {
+        } else if (cpu > 0.6) {
             status = TelemetrySnapshot.SystemStatus.STRESSED;
         }
 
@@ -52,26 +73,8 @@ public class TelemetryScanner {
                 mem,
                 threads,
                 status,
-                dropped,
-                accepted
+                0,
+                0
         );
-    }
-
-    private Double fetchMetric(String metricName) {
-        try {
-            var meter = meterRegistry.find(metricName).gauge();
-            return (meter != null) ? meter.value() : 0.0;
-        } catch (Exception e) {
-            return 0.0;
-        }
-    }
-
-    private long fetchCounter(String name, String tagKey, String tagValue) {
-        try {
-            var counter = meterRegistry.find(name).tag(tagKey, tagValue).counter();
-            return (counter != null) ? (long) counter.count() : 0L;
-        } catch (Exception e) {
-            return 0L;
-        }
     }
 }
