@@ -52,6 +52,7 @@ public class FluxLimiter {
      */
     public void updateRefillRate(long newRate) {
         log.info("FluxLimiter: AI is updating refill rate to {} req/sec", newRate);
+        log.info("/n");
         this.refillRatePerSecond = newRate;
     }
 }
