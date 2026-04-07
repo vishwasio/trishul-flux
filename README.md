@@ -1,4 +1,4 @@
-# Trishul-Flux
+# Auto Infra Resilience Engine [Trishul-Flux]
 
 **Trishul-Flux** is a high-performance, predictive resilience engine designed for modern Cloud-Native Java applications. It bridges the gap between reactive infrastructure scaling and application-level stability.
 
