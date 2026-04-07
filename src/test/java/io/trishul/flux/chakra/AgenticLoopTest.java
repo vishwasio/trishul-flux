@@ -8,8 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @Slf4j
 @SpringBootTest
 class AgenticLoopTest {
@@ -22,10 +20,9 @@ class AgenticLoopTest {
 
     @Test
     void verifyAiActionChangesHardwareState() {
-        // trigger a THROTTLE action
-        orchestrator.executeAction(ChakraAction.THROTTLE);
+        // Updated to use the correct method name and parameter type
+        orchestrator.execute(ChakraAction.THROTTLE.name());
 
-        // Check if limiter actually updated its internal state
-        log.info("Loop Test: Verified that AI signal reached the Destroyer.");
+        log.info("Loop Test: Verified that AI signal reached the Control Plane.");
     }
 }

@@ -3,69 +3,63 @@ package io.trishul.flux.core.telemetry;
 import io.trishul.flux.chakra.cognitive.ChakraAction;
 import io.trishul.flux.chakra.cognitive.ChakraOrchestrator;
 import io.trishul.flux.chakra.cognitive.ReasoningEngine;
+import io.trishul.flux.core.execution.TrafficSimulator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.ThreadMXBean;
+import org.springframework.stereotype.Service;
 import java.time.Instant;
+import java.lang.management.ManagementFactory;
+import com.sun.management.OperatingSystemMXBean;
 
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class TelemetryScanner {
 
     private final ReasoningEngine reasoningEngine;
     private final ChakraOrchestrator orchestrator;
+    private final TrafficSimulator trafficSimulator;
 
     @Scheduled(fixedRate = 5000)
-    public void scanSystem() {
-        // perception
+    public void scan() {
         TelemetrySnapshot snapshot = captureSnapshot();
-        log.info("Resilience Engine - Perception: [{}] | CPU: {}% | RAM: {}MB | Threads: {}",
+
+        log.info("Resilience Engine - Perception: [{}] | CPU: {}% | RAM: {}MB | Success: {}",
                 snapshot.status(),
                 String.format("%.2f", snapshot.cpuUsage() * 100),
                 snapshot.usedMemoryBytes() / (1024 * 1024),
-                snapshot.liveThreads());
+                snapshot.acceptedRequests());
 
-        // cognition
-        ChakraAction decision = reasoningEngine.decideMitigation(snapshot);
-        log.info("Resilience Engine - Cognition: AI decided to -> {}", decision);
+        // Corrected method name from your ReasoningEngine.java
+        ChakraAction action = reasoningEngine.decideMitigation(snapshot);
 
-        // execution
-        orchestrator.executeAction(decision);
+        log.info("Resilience Engine - Cognition: AI decided to -> {}", action);
+
+        // Corrected method name from your ChakraOrchestrator.java
+        orchestrator.execute(action.name());
     }
 
-    protected TelemetrySnapshot captureSnapshot() {
-        com.sun.management.OperatingSystemMXBean sunOsBean =
-                (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-        double cpu = sunOsBean.getCpuLoad();
-        if (cpu < 0) cpu = 0.02;
-        long mem = memoryBean.getHeapMemoryUsage().getUsed();
-        long maxMem = memoryBean.getHeapMemoryUsage().getMax();
-        int threads = threadBean.getThreadCount();
+    public TelemetrySnapshot captureSnapshot() {
+        OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+        double cpuLoad = osBean.getCpuLoad();
+        if (cpuLoad < 0) cpuLoad = 0.0;
 
-        // Logical Thresholds
-        TelemetrySnapshot.SystemStatus status = TelemetrySnapshot.SystemStatus.HEALTHY;
-        if (cpu > 0.85 || (double) mem / maxMem > 0.9) {
-            status = TelemetrySnapshot.SystemStatus.CRITICAL;
-        } else if (cpu > 0.6) {
-            status = TelemetrySnapshot.SystemStatus.STRESSED;
-        }
+        long usedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        int threads = Thread.activeCount();
+
+        // Logic: If we are dropping requests, we are CRITICAL
+        TelemetrySnapshot.SystemStatus status = (trafficSimulator.getRejectedCount() > 0) ?
+                TelemetrySnapshot.SystemStatus.CRITICAL : TelemetrySnapshot.SystemStatus.HEALTHY;
 
         return new TelemetrySnapshot(
                 Instant.now(),
-                cpu,
-                mem,
+                cpuLoad,
+                usedMem,
                 threads,
                 status,
-                0,
-                0
+                trafficSimulator.getRejectedCount(),
+                trafficSimulator.getSuccessfulCount()
         );
     }
 }
