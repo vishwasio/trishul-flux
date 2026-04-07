@@ -17,11 +17,11 @@ public class ReasoningEngine {
     public ChakraAction decideMitigation(TelemetrySnapshot snapshot) {
         String prompt = constructPrompt(snapshot);
 
-        log.info("Chakra: Reasoning about system state [{}] ", snapshot.status());
+        log.info("Control Plane: Reasoning about system state [{}] ", snapshot.status());
         String rawResponse = ollamaClient.chat(prompt);
 
         ChakraAction action = parser.parse(rawResponse);
-        log.info("Chakra: Decision formulated -> {}", action);
+        log.info("Control Plane: Decision formulated -> {}", action);
 
         return action;
     }

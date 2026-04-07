@@ -27,7 +27,7 @@ public class OllamaClient {
                     "stream", false
             );
 
-            log.info("Chakra: Sending request to 0.5B model...");
+            log.info("Control Plane: Sending request to 0.5B model...");
 
             OllamaResponse response = restClient.post()
                     .uri(OLLAMA_URL)
@@ -38,7 +38,7 @@ public class OllamaClient {
 
             return (response != null) ? response.response() : "No response from AI";
         } catch (Exception e) {
-            log.error("Chakra: AI Connection failed. Ensure Ollama is running. Error: {}", e.getMessage());
+            log.error("Control Plane: AI Connection failed. Ensure Ollama is running. Error: {}", e.getMessage());
             return "AI_OFFLINE";
         }
     }

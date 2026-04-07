@@ -18,17 +18,17 @@ public class ChakraOrchestrator {
     public void executeAction(ChakraAction action) {
         switch (action) {
             case THROTTLE -> {
-                log.info("Chakra: [ACTION] Applying strict rate limiting...");
+                log.info("Control Plane: [ACTION] Applying strict rate limiting...");
                 limiter.updateRefillRate(10);
             }
             case SCALE -> {
-                log.info("Chakra: [ACTION] Scaling up capacity...");
+                log.info("Control Plane: [ACTION] Scaling up capacity...");
                 limiter.updateRefillRate(100);
             }
             case MONITOR -> {
-                log.info("Chakra: [ACTION] Maintaining equilibrium. No change needed.");
+                log.info("Control Plane: [ACTION] Maintaining equilibrium. No change needed.");
             }
-            default -> log.warn("Chakra: [ACTION] Unknown action received: {}", action);
+            default -> log.warn("Control Plane: [ACTION] Unknown action received: {}", action);
         }
     }
 }

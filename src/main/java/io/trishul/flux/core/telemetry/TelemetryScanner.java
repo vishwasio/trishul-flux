@@ -25,7 +25,7 @@ public class TelemetryScanner {
     public void scanSystem() {
         // perception
         TelemetrySnapshot snapshot = captureSnapshot();
-        log.info("Trishul-Flux Perception: [{}] | CPU: {}% | RAM: {}MB | Threads: {}",
+        log.info("Resilience Engine - Perception: [{}] | CPU: {}% | RAM: {}MB | Threads: {}",
                 snapshot.status(),
                 String.format("%.2f", snapshot.cpuUsage() * 100),
                 snapshot.usedMemoryBytes() / (1024 * 1024),
@@ -33,7 +33,7 @@ public class TelemetryScanner {
 
         // cognition
         ChakraAction decision = reasoningEngine.decideMitigation(snapshot);
-        log.info("Trishul-Flux Cognition: AI decided to -> {}", decision);
+        log.info("Resilience Engine - Cognition: AI decided to -> {}", decision);
 
         // execution
         orchestrator.executeAction(decision);

@@ -13,24 +13,18 @@ public class FluxLimiter {
     private final AtomicLong availableTokens = new AtomicLong(100);
     private long lastRefillTimestamp = System.currentTimeMillis();
 
-    // should return true if request is allowed, false if it must be destroyed.
     public synchronized boolean tryAcquire() {
         refill();
-
         if (availableTokens.get() > 0) {
             availableTokens.decrementAndGet();
             return true;
         }
-
-        log.warn("FluxLimiter: [DESTROYED] Token bucket empty. Request rejected.");
         return false;
     }
 
-    // refill tokens based on time passed.
     private void refill() {
         long now = System.currentTimeMillis();
         long deltaMillis = now - lastRefillTimestamp;
-
         if (deltaMillis > 1000) {
             long tokensToAdd = (deltaMillis / 1000) * refillRatePerSecond;
             if (tokensToAdd > 0) {
@@ -41,10 +35,8 @@ public class FluxLimiter {
         }
     }
 
-    // The AI Hook. The ReasoningEngine will call this to change system behavior.
     public void updateRefillRate(long newRate) {
-        log.info("FluxLimiter: AI is updating refill rate to {} req/sec", newRate);
-        log.info("\n");
+        log.info("Resilience Engine: Control Plane updating refill rate to {} req/sec", newRate);
         this.refillRatePerSecond = newRate;
     }
 }

@@ -18,7 +18,7 @@ public class ChakraResponseParser {
             case String s when s.contains("THROTTLE") -> ChakraAction.THROTTLE;
             case String s when s.contains("MONITOR") -> ChakraAction.MONITOR;
             default -> {
-                log.warn("Chakra: AI returned unrecognizable action: {}", rawResponse);
+                log.warn("Control Plane: AI returned unrecognizable action: {}", rawResponse);
                 yield ChakraAction.UNKNOWN;
             }
         };
