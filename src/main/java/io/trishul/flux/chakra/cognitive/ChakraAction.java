@@ -1,11 +1,10 @@
 package io.trishul.flux.chakra.cognitive;
 
-/**
- * Deterministic actions derived from AI reasoning.
- */
+// Deterministic actions derived from AI reasoning.
+
 public enum ChakraAction {
-    SCALE,      // Increase resources/limits
-    THROTTLE,   // Decrease limits/reject traffic
-    MONITOR,    // Stay the course, no change needed
-    UNKNOWN     // Fallback for hallucinated responses
+    SCALE,      // increase resources
+    THROTTLE,   // reject traffic
+    MONITOR,    // no change needed
+    UNKNOWN     // hallucinations/ unrecognizable action
 }

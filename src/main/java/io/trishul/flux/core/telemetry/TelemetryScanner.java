@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
-//import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.ThreadMXBean;
 import java.time.Instant;
 
@@ -24,43 +23,35 @@ public class TelemetryScanner {
 
     @Scheduled(fixedRate = 5000)
     public void scanSystem() {
-        // 1. Perception
+        // perception
         TelemetrySnapshot snapshot = captureSnapshot();
-
         log.info("Trishul-Flux Perception: [{}] | CPU: {}% | RAM: {}MB | Threads: {}",
                 snapshot.status(),
                 String.format("%.2f", snapshot.cpuUsage() * 100),
                 snapshot.usedMemoryBytes() / (1024 * 1024),
                 snapshot.liveThreads());
 
-        // 2. Cognition
+        // cognition
         ChakraAction decision = reasoningEngine.decideMitigation(snapshot);
         log.info("Trishul-Flux Cognition: AI decided to -> {}", decision);
 
-        // 3. Execution
+        // execution
         orchestrator.executeAction(decision);
     }
 
-    private TelemetrySnapshot captureSnapshot() {
-        // Cast to the specific Sun implementation to get actual CPU load on Windows
+    protected TelemetrySnapshot captureSnapshot() {
         com.sun.management.OperatingSystemMXBean sunOsBean =
                 (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-
-        // getCpuLoad() returns 0.0 to 1.0 (e.g., 0.85 = 85%)
         double cpu = sunOsBean.getCpuLoad();
-
-        // If it's still negative (initialization), default to 0
         if (cpu < 0) cpu = 0.02;
-
         long mem = memoryBean.getHeapMemoryUsage().getUsed();
         long maxMem = memoryBean.getHeapMemoryUsage().getMax();
         int threads = threadBean.getThreadCount();
 
         // Logical Thresholds
         TelemetrySnapshot.SystemStatus status = TelemetrySnapshot.SystemStatus.HEALTHY;
-
         if (cpu > 0.85 || (double) mem / maxMem > 0.9) {
             status = TelemetrySnapshot.SystemStatus.CRITICAL;
         } else if (cpu > 0.6) {

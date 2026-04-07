@@ -26,11 +26,11 @@ class TelemetryStressTest {
         int totalRequests = 2000;
         log.info("Starting Stress Test: Simulating {} requests via Virtual Threads...", totalRequests);
 
-        // Using Virtual Threads to simulate high concurrency
+        // using Virtual Threads to simulate high concurrency
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             for (int i = 0; i < totalRequests; i++) {
                 executor.submit(() -> {
-                    // Randomly decide if a request is "Accepted" or "Dropped"
+                    // randomly decide if a request is "Accepted" or "Dropped"
                     if (Math.random() > 0.7) {
                         limiterMetrics.incrementDropped();
                     } else {
@@ -38,9 +38,9 @@ class TelemetryStressTest {
                     }
                 });
             }
-        } // Executor auto-closes and waits for all virtual threads to finish
+        } // executor auto-closes and waits for all virtual threads to finish
 
-        // Trigger the scanner to capture the aftermath
+        // trigger the scanner to capture the aftermath
         TelemetrySnapshot snapshot = scanner.captureSnapshot();
 
         log.info("--- STRESS TEST RESULTS ---");
@@ -50,7 +50,7 @@ class TelemetryStressTest {
         log.info("Final System Status: [{}]", snapshot.status());
         log.info("---------------------------");
 
-        // Assertions
+        // assertions
         assertEquals(totalRequests, snapshot.acceptedRequests() + snapshot.droppedRequests(),
                 "Total requests tracked must match total requests sent");
 

@@ -7,17 +7,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class ChakraResponseParser {
 
-    /**
-     * Cleans and maps the AI string response to a ChakraAction.
-     */
+    // Cleans and maps the AI string response to a ChakraAction
     public ChakraAction parse(String rawResponse) {
         if (rawResponse == null || rawResponse.isBlank()) {
             return ChakraAction.UNKNOWN;
         }
-
-        // Clean the string: Uppercase, remove periods/whitespace
         String clean = rawResponse.trim().toUpperCase().replaceAll("[^A-Z]", "");
-
         return switch (clean) {
             case String s when s.contains("SCALE") -> ChakraAction.SCALE;
             case String s when s.contains("THROTTLE") -> ChakraAction.THROTTLE;

@@ -13,10 +13,7 @@ public class FluxLimiter {
     private final AtomicLong availableTokens = new AtomicLong(100);
     private long lastRefillTimestamp = System.currentTimeMillis();
 
-    /**
-     * The core 'Destroyer' logic.
-     * Returns true if request is allowed, false if it must be destroyed.
-     */
+    // should return true if request is allowed, false if it must be destroyed.
     public synchronized boolean tryAcquire() {
         refill();
 
@@ -29,9 +26,7 @@ public class FluxLimiter {
         return false;
     }
 
-    /**
-     * Logic to refill tokens based on time passed.
-     */
+    // refill tokens based on time passed.
     private void refill() {
         long now = System.currentTimeMillis();
         long deltaMillis = now - lastRefillTimestamp;
@@ -46,13 +41,10 @@ public class FluxLimiter {
         }
     }
 
-    /**
-     * The "Hook" for the AI.
-     * The ReasoningEngine will call this to change system behavior.
-     */
+    // The AI Hook. The ReasoningEngine will call this to change system behavior.
     public void updateRefillRate(long newRate) {
         log.info("FluxLimiter: AI is updating refill rate to {} req/sec", newRate);
-        log.info("/n");
+        log.info("\n");
         this.refillRatePerSecond = newRate;
     }
 }

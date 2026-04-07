@@ -13,9 +13,7 @@ public class ReasoningEngine {
     private final OllamaClient ollamaClient;
     private final ChakraResponseParser parser;
 
-    /**
-     * Translates a system snapshot into a deterministic action.
-     */
+    // system snapshot into deterministic action.
     public ChakraAction decideMitigation(TelemetrySnapshot snapshot) {
         String prompt = constructPrompt(snapshot);
 

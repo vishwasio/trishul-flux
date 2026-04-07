@@ -18,10 +18,7 @@ public class OllamaClient {
         this.restClient = RestClient.create();
     }
 
-    /**
-     * Sends a prompt to the local 0.5B model.
-     * using stream: false to get a single consolidated response.
-     */
+    // using stream: false to get a single consolidated response.
     public String chat(String prompt) {
         try {
             Map<String, Object> body = Map.of(
