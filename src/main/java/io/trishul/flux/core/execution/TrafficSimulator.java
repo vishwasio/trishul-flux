@@ -17,7 +17,9 @@ public class TrafficSimulator {
 
     @Scheduled(fixedRate = 1000)
     public void generateTraffic() {
-        int burstSize = 120;
+        // Randomize traffic between 1 and 500 requests per second
+        // This forces the AI to handle both "Quiet" and "Overload" periods
+        int burstSize = (int) (Math.random() * 500) + 1;
         long currentSuccess = 0;
         long currentFailure = 0;
 
@@ -31,9 +33,9 @@ public class TrafficSimulator {
             }
         }
 
-        double successRate = ((double) currentSuccess / burstSize) * 100;
-        log.info("Simulator: [BURST] Success: {} | Dropped: {} | Rate: {}%",
-                currentSuccess, currentFailure, String.format("%.2f", successRate));
+        double successRate = (burstSize > 0) ? ((double) currentSuccess / burstSize) * 100 : 100;
+        log.info("Simulator: [DYNAMIC BURST] Size: {} | Success: {} | Dropped: {} | Rate: {}%",
+                burstSize, currentSuccess, currentFailure, String.format("%.2f", successRate));
     }
 
     public long getSuccessfulCount() {
