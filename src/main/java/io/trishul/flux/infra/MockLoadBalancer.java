@@ -13,19 +13,17 @@ public class MockLoadBalancer {
 
     private final FluxLimiter limiter;
     private final FluxCircuitBreaker circuitBreaker;
-    private boolean slowMode = false;
+    private boolean latencyEnabled = false;
 
     public boolean handleRequest() {
-        // circuit breaker check
         if (!circuitBreaker.canExecute()) {
             return false;
         }
 
-        // simulate latency if slowMode is enabled
-        if (slowMode) {
+        if (latencyEnabled) {
             try {
-                // 200ms delay to simulate upstream pressure / changed to 10ms
-                Thread.sleep(10);
+                // reduced to 20ms to allow scheduler heartbeats to remain consistent
+                Thread.sleep(20);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -34,8 +32,8 @@ public class MockLoadBalancer {
         return limiter.tryAcquire();
     }
 
-    public void toggleSlowMode(boolean active) {
-        this.slowMode = active;
-        log.info("Control Plane: Latency injection is now {}", active ? "ENABLED" : "DISABLED");
+    public void setLatencyEnabled(boolean active) {
+        this.latencyEnabled = active;
+        log.info("[MockLoadBalancer] Latency injection: {}", active ? "ENABLED" : "DISABLED");
     }
 }

@@ -26,4 +26,8 @@ public class TelemetryRepository {
     public int getRecentCount() {
         return window.size();
     }
+
+    public void clear() {
+        window.clear();
+    }
 }

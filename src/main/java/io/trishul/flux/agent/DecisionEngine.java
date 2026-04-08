@@ -49,7 +49,12 @@ public class DecisionEngine {
     private String constructContextualPrompt(TelemetrySnapshot current, String trend) {
         return String.format(
                 "Context: %s. Current Status: %s. Metrics: CPU %.2f%%, Dropped: %d.\n" +
-                        "Instruction: Analyze the trend and respond with ONE WORD: [SCALE, THROTTLE, or MONITOR].",
+                        "Instruction: Choose the best SRE action and respond with ONE WORD: \n" +
+                        "[MONITOR] - Health is good.\n" +
+                        "[THROTTLE] - Stress detected.\n" +
+                        "[SCALE] - High demand, system capable.\n" +
+                        "[DRAIN] - Critical failure, stop all traffic.\n" +
+                        "[REBOOT] - Total collapse, reset system history.",
                 trend, current.status(), current.cpuUsage(), current.droppedRequests()
         );
     }

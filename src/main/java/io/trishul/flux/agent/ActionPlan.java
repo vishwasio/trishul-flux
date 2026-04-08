@@ -6,5 +6,7 @@ public enum ActionPlan {
     SCALE,      // increase resources
     THROTTLE,   // reject traffic
     MONITOR,    // no change needed
-    UNKNOWN     // hallucinations/ unrecognizable action
+    UNKNOWN,    // hallucinations/ unrecognizable action
+    DRAIN,      // New: Stop all incoming requests
+    REBOOT      // New: Reset memory and infrastructure
 }
