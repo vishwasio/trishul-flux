@@ -1,5 +1,7 @@
 package io.trishul.flux.chakra.cognitive;
 
+import io.trishul.flux.agent.ActionPlan;
+import io.trishul.flux.agent.DecisionEngine;
 import io.trishul.flux.core.telemetry.TelemetrySnapshot;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,11 +15,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class ReasoningTest {
 
     @Autowired
-    private ReasoningEngine reasoningEngine;
+    private DecisionEngine decisionEngine;
 
     @Test
     void verifyAiDecisionLogic() {
-        // Mock a Critical State (High CPU and Dropped Requests)
+        // Mocking a Critical State (High CPU and Dropped Requests)
         TelemetrySnapshot criticalSnapshot = new TelemetrySnapshot(
                 Instant.now(),
                 0.95, // 95% CPU
@@ -28,14 +30,14 @@ class ReasoningTest {
                 300
         );
 
-        // Updated: Changed type from String to ChakraAction
-        ChakraAction decision = reasoningEngine.decideMitigation(criticalSnapshot);
+        // Changed type from String to ActionPlan
+        ActionPlan decision = decisionEngine.decideMitigation(criticalSnapshot);
 
         System.out.println("AI Decision for Critical State: " + decision);
 
         assertNotNull(decision);
-        // Updated: Checking against the Enum values instead of String contains
-        assertTrue(decision == ChakraAction.THROTTLE || decision == ChakraAction.SCALE,
+        // Checking against the Enum values instead of String contains
+        assertTrue(decision == ActionPlan.THROTTLE || decision == ActionPlan.SCALE,
                 "AI should recommend THROTTLE or SCALE for a CRITICAL state");
     }
 }

@@ -1,80 +1,65 @@
 package io.trishul.flux.core.telemetry;
 
-import io.trishul.flux.chakra.cognitive.ChakraAction;
-import io.trishul.flux.chakra.cognitive.ChakraOrchestrator;
-import io.trishul.flux.chakra.cognitive.ReasoningEngine;
+import io.trishul.flux.agent.ActionPlan;
+import io.trishul.flux.agent.DecisionEngine;
+import io.trishul.flux.orchestrator.ResilienceOrchestrator;
+import io.trishul.flux.infra.TrafficSimulator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-//import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.ThreadMXBean;
+import org.springframework.stereotype.Service;
 import java.time.Instant;
+import java.lang.management.ManagementFactory;
+import com.sun.management.OperatingSystemMXBean;
 
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class TelemetryScanner {
 
-    private final ReasoningEngine reasoningEngine;
-    private final ChakraOrchestrator orchestrator;
+    private final DecisionEngine decisionEngine;
+    private final ResilienceOrchestrator orchestrator;
+    private final TrafficSimulator trafficSimulator;
 
     @Scheduled(fixedRate = 5000)
-    public void scanSystem() {
-        // 1. Perception
+    public void scan() {
         TelemetrySnapshot snapshot = captureSnapshot();
 
-        log.info("Trishul-Flux Perception: [{}] | CPU: {}% | RAM: {}MB | Threads: {}",
+        log.info("Resilience Engine - Perception: [{}] | CPU: {}% | RAM: {}MB | Success: {}",
                 snapshot.status(),
                 String.format("%.2f", snapshot.cpuUsage() * 100),
                 snapshot.usedMemoryBytes() / (1024 * 1024),
-                snapshot.liveThreads());
+                snapshot.acceptedRequests());
 
-        // 2. Cognition
-        ChakraAction decision = reasoningEngine.decideMitigation(snapshot);
-        log.info("Trishul-Flux Cognition: AI decided to -> {}", decision);
+        // Corrected method name from your DecisionEngine.java
+        ActionPlan action = decisionEngine.decideMitigation(snapshot);
 
-        // 3. Execution
-        orchestrator.executeAction(decision);
+        log.info("Resilience Engine - Cognition: AI decided to -> {}", action);
+
+        // Corrected method name from your ResilienceOrchestrator.java
+        orchestrator.execute(action.name());
     }
 
-    private TelemetrySnapshot captureSnapshot() {
-        // Cast to the specific Sun implementation to get actual CPU load on Windows
-        com.sun.management.OperatingSystemMXBean sunOsBean =
-                (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+    public TelemetrySnapshot captureSnapshot() {
+        OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+        double cpuLoad = osBean.getCpuLoad();
+        if (cpuLoad < 0) cpuLoad = 0.0;
 
-        // getCpuLoad() returns 0.0 to 1.0 (e.g., 0.85 = 85%)
-        double cpu = sunOsBean.getCpuLoad();
+        long usedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        int threads = Thread.activeCount();
 
-        // If it's still negative (initialization), default to 0
-        if (cpu < 0) cpu = 0.02;
-
-        long mem = memoryBean.getHeapMemoryUsage().getUsed();
-        long maxMem = memoryBean.getHeapMemoryUsage().getMax();
-        int threads = threadBean.getThreadCount();
-
-        // Logical Thresholds
-        TelemetrySnapshot.SystemStatus status = TelemetrySnapshot.SystemStatus.HEALTHY;
-
-        if (cpu > 0.85 || (double) mem / maxMem > 0.9) {
-            status = TelemetrySnapshot.SystemStatus.CRITICAL;
-        } else if (cpu > 0.6) {
-            status = TelemetrySnapshot.SystemStatus.STRESSED;
-        }
+        // Logic: If we are dropping requests, we are CRITICAL
+        TelemetrySnapshot.SystemStatus status = (trafficSimulator.getRejectedCount() > 0) ?
+                TelemetrySnapshot.SystemStatus.CRITICAL : TelemetrySnapshot.SystemStatus.HEALTHY;
 
         return new TelemetrySnapshot(
                 Instant.now(),
-                cpu,
-                mem,
+                cpuLoad,
+                usedMem,
                 threads,
                 status,
-                0,
-                0
+                trafficSimulator.getRejectedCount(),
+                trafficSimulator.getSuccessfulCount()
         );
     }
 }

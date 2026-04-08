@@ -1,4 +1,4 @@
-package io.trishul.flux.chakra.cognitive;
+package io.trishul.flux.agent;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -9,19 +9,16 @@ import java.util.Map;
 
 @Slf4j
 @Component
-public class OllamaClient {
+public class ModelClient {
 
     private final RestClient restClient;
     private static final String OLLAMA_URL = "http://localhost:11434/api/generate";
 
-    public OllamaClient() {
+    public ModelClient() {
         this.restClient = RestClient.create();
     }
 
-    /**
-     * Sends a prompt to the local 0.5B model.
-     * using stream: false to get a single consolidated response.
-     */
+    // using stream: false to get a single consolidated response.
     public String chat(String prompt) {
         try {
             Map<String, Object> body = Map.of(
@@ -30,7 +27,7 @@ public class OllamaClient {
                     "stream", false
             );
 
-            log.info("Chakra: Sending request to 0.5B model...");
+            log.info("Control Plane: Sending request to 0.5B model...");
 
             OllamaResponse response = restClient.post()
                     .uri(OLLAMA_URL)
@@ -41,7 +38,7 @@ public class OllamaClient {
 
             return (response != null) ? response.response() : "No response from AI";
         } catch (Exception e) {
-            log.error("Chakra: AI Connection failed. Ensure Ollama is running. Error: {}", e.getMessage());
+            log.error("Control Plane: AI Connection failed. Ensure Ollama is running. Error: {}", e.getMessage());
             return "AI_OFFLINE";
         }
     }

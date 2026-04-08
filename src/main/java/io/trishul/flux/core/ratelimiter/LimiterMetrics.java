@@ -1,4 +1,4 @@
-package io.trishul.flux.core.limiter;
+package io.trishul.flux.core.ratelimiter;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;

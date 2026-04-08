@@ -1,4 +1,4 @@
-package io.trishul.flux.core.telemetry;
+package io.trishul.flux.infra;
 
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -9,9 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class HeartbeatProvider {
 
-    // Listener to confirm Trishul-Flux is alive after startup
+    // Listener to confirm system is alive after startup
     @EventListener(ApplicationReadyEvent.class)
     public void onStart() {
-        log.info("Trishul-Flux: Kernel heartbeat initiated.");
+        log.info("auto-infra-resilience-engine [Trishul-Flux]: Kernel Heartbeat Initiated / System is alive.");
     }
 }

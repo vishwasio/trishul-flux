@@ -1,5 +1,6 @@
 package io.trishul.flux.core.execution;
 
+import io.trishul.flux.core.ratelimiter.FluxLimiter;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
