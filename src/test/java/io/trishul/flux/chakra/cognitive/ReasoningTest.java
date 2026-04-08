@@ -31,7 +31,7 @@ class ReasoningTest {
         );
 
         // Changed type from String to ActionPlan
-        ActionPlan decision = decisionEngine.decideMitigation(criticalSnapshot);
+        ActionPlan decision = decisionEngine.decide(criticalSnapshot);
 
         System.out.println("AI Decision for Critical State: " + decision);
 

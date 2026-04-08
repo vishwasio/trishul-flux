@@ -8,9 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
 import java.time.Instant;
-import java.lang.management.ManagementFactory;
-import com.sun.management.OperatingSystemMXBean;
 
 @Slf4j
 @Service
@@ -20,42 +19,49 @@ public class TelemetryScanner {
     private final DecisionEngine decisionEngine;
     private final ResilienceOrchestrator orchestrator;
     private final TrafficSimulator trafficSimulator;
+    private final TelemetryRepository repository;
 
     @Scheduled(fixedRate = 5000)
     public void scan() {
         TelemetrySnapshot snapshot = captureSnapshot();
 
-        log.info("Resilience Engine - Perception: [{}] | CPU: {}% | RAM: {}MB | Success: {}",
+        // Push snapshot to sliding window memory
+        repository.addSnapshot(snapshot);
+
+        log.info("Perception: [{}] | History Depth: {}/10 | CPU: {}% | Drops: {}",
                 snapshot.status(),
-                String.format("%.2f", snapshot.cpuUsage() * 100),
-                snapshot.usedMemoryBytes() / (1024 * 1024),
-                snapshot.acceptedRequests());
+                repository.getRecentCount(),
+                String.format("%.2f", snapshot.cpuUsage()),
+                snapshot.droppedRequests());
 
-        // Corrected method name from your DecisionEngine.java
-        ActionPlan action = decisionEngine.decideMitigation(snapshot);
+        ActionPlan action = decisionEngine.decide(snapshot);
 
-        log.info("Resilience Engine - Cognition: AI decided to -> {}", action);
-
-        // Corrected method name from your ResilienceOrchestrator.java
+        log.info("Cognition: AI decision -> {}", action);
         orchestrator.execute(action.name());
     }
 
-    public TelemetrySnapshot captureSnapshot() {
-        OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-        double cpuLoad = osBean.getCpuLoad();
-        if (cpuLoad < 0) cpuLoad = 0.0;
+    protected TelemetrySnapshot captureSnapshot() {
+        // MXBean Logic for system metrics
+        double cpu = com.sun.management.OperatingSystemMXBean.class.isInstance(
+                java.lang.management.ManagementFactory.getOperatingSystemMXBean())
+                ? ((com.sun.management.OperatingSystemMXBean) java.lang.management.ManagementFactory
+                .getOperatingSystemMXBean()).getCpuLoad() * 100
+                : 0.0;
 
-        long usedMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        long mem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         int threads = Thread.activeCount();
 
-        // Logic: If we are dropping requests, we are CRITICAL
-        TelemetrySnapshot.SystemStatus status = (trafficSimulator.getRejectedCount() > 0) ?
-                TelemetrySnapshot.SystemStatus.CRITICAL : TelemetrySnapshot.SystemStatus.HEALTHY;
+        TelemetrySnapshot.SystemStatus status = TelemetrySnapshot.SystemStatus.HEALTHY;
+        if (cpu > 85 || trafficSimulator.getRejectedCount() > 50) {
+            status = TelemetrySnapshot.SystemStatus.CRITICAL;
+        } else if (cpu > 60 || trafficSimulator.getRejectedCount() > 0) {
+            status = TelemetrySnapshot.SystemStatus.STRESSED;
+        }
 
         return new TelemetrySnapshot(
                 Instant.now(),
-                cpuLoad,
-                usedMem,
+                cpu,
+                mem,
                 threads,
                 status,
                 trafficSimulator.getRejectedCount(),

@@ -13,27 +13,27 @@ public class DecisionEngine {
     private final ModelClient modelClient;
     private final ResponseInterpreter parser;
 
-    // system snapshot into deterministic action.
-    public ActionPlan decideMitigation(TelemetrySnapshot snapshot) {
+    public ActionPlan decide(TelemetrySnapshot snapshot) {
         String prompt = constructPrompt(snapshot);
 
-        log.info("Control Plane: Reasoning about system state [{}] ", snapshot.status());
+        log.info("[DecisionEngine] Reasoning about system state [{}]", snapshot.status());
         String rawResponse = modelClient.chat(prompt);
 
         ActionPlan action = parser.parse(rawResponse);
-        log.info("Control Plane: Decision formulated -> {}", action);
+        log.info("[DecisionEngine] Decision formulated -> {}", action);
 
         return action;
     }
 
     private String constructPrompt(TelemetrySnapshot snapshot) {
         return String.format(
-                "System Status: %s. Metrics: CPU %d%%, RAM %dMB, Dropped: %d. " +
+                "System Status: %s. Metrics: CPU %.2f%%, RAM %dMB, Dropped: %d, Success: %d. " +
                         "Instruction: Provide a one-word command: [SCALE, THROTTLE, or MONITOR].",
                 snapshot.status(),
-                (int)(snapshot.cpuUsage() * 100),
-                snapshot.usedMemoryBytes() / 1024 / 1024,
-                snapshot.droppedRequests()
+                snapshot.cpuUsage(),
+                snapshot.usedMemoryBytes() / (1024 * 1024),
+                snapshot.droppedRequests(),
+                snapshot.acceptedRequests()
         );
     }
 }
