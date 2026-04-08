@@ -17,9 +17,9 @@ public class TrafficSimulator {
 
     @Scheduled(fixedRate = 1000)
     public void generateTraffic() {
-        // Randomize traffic between 1 and 500 requests per second
+        // Randomize traffic between 1 and 500 requests per second // changed to be b/w 1 and 800
         // This forces the AI to handle both "Quiet" and "Overload" periods
-        int burstSize = (int) (Math.random() * 500) + 1;
+        int burstSize = (int) (Math.random() * 800) + 1;
         long currentSuccess = 0;
         long currentFailure = 0;
 

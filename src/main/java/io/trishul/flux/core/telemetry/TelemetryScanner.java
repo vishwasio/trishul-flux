@@ -25,7 +25,7 @@ public class TelemetryScanner {
     public void scan() {
         TelemetrySnapshot snapshot = captureSnapshot();
 
-        // Push snapshot to sliding window memory
+        // push snapshot to sliding window memory
         repository.addSnapshot(snapshot);
 
         log.info("Perception: [{}] | History Depth: {}/10 | CPU: {}% | Drops: {}",
@@ -34,7 +34,7 @@ public class TelemetryScanner {
                 String.format("%.2f", snapshot.cpuUsage()),
                 snapshot.droppedRequests());
 
-        ActionPlan action = decisionEngine.decide(snapshot);
+        ActionPlan action = decisionEngine.decide(repository.getHistory());
 
         log.info("Cognition: AI decision -> {}", action);
         orchestrator.execute(action.name());
