@@ -24,8 +24,8 @@ public class MockLoadBalancer {
         // simulate latency if slowMode is enabled
         if (slowMode) {
             try {
-                // 200ms delay to simulate upstream pressure
-                Thread.sleep(200);
+                // 200ms delay to simulate upstream pressure / changed to 10ms
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
