@@ -1,13 +1,12 @@
 package io.trishul.flux.core.telemetry;
 
-import io.trishul.flux.core.limiter.LimiterMetrics;
+import io.trishul.flux.core.ratelimiter.LimiterMetrics;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 

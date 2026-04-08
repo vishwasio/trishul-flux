@@ -1,5 +1,6 @@
 package io.trishul.flux.chakra.cognitive;
 
+import io.trishul.flux.agent.ModelClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,12 +11,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class AiConnectivityTest {
 
     @Autowired
-    private OllamaClient ollamaClient;
+    private ModelClient modelClient;
 
     @Test
     void verifyAiConnection() {
         String testPrompt = "Respond with the word 'READY' only.";
-        String response = ollamaClient.chat(testPrompt);
+        String response = modelClient.chat(testPrompt);
 
         System.out.println("AI Response: " + response);
 

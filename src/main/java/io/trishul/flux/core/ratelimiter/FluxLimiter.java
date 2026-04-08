@@ -1,4 +1,4 @@
-package io.trishul.flux.core.execution;
+package io.trishul.flux.core.ratelimiter;
 
 import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicLong;

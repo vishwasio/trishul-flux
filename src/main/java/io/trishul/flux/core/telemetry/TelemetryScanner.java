@@ -1,9 +1,9 @@
 package io.trishul.flux.core.telemetry;
 
-import io.trishul.flux.chakra.cognitive.ChakraAction;
-import io.trishul.flux.chakra.cognitive.ChakraOrchestrator;
-import io.trishul.flux.chakra.cognitive.ReasoningEngine;
-import io.trishul.flux.core.execution.TrafficSimulator;
+import io.trishul.flux.agent.ActionPlan;
+import io.trishul.flux.agent.DecisionEngine;
+import io.trishul.flux.orchestrator.ResilienceOrchestrator;
+import io.trishul.flux.infra.TrafficSimulator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,8 +17,8 @@ import com.sun.management.OperatingSystemMXBean;
 @RequiredArgsConstructor
 public class TelemetryScanner {
 
-    private final ReasoningEngine reasoningEngine;
-    private final ChakraOrchestrator orchestrator;
+    private final DecisionEngine decisionEngine;
+    private final ResilienceOrchestrator orchestrator;
     private final TrafficSimulator trafficSimulator;
 
     @Scheduled(fixedRate = 5000)
@@ -31,12 +31,12 @@ public class TelemetryScanner {
                 snapshot.usedMemoryBytes() / (1024 * 1024),
                 snapshot.acceptedRequests());
 
-        // Corrected method name from your ReasoningEngine.java
-        ChakraAction action = reasoningEngine.decideMitigation(snapshot);
+        // Corrected method name from your DecisionEngine.java
+        ActionPlan action = decisionEngine.decideMitigation(snapshot);
 
         log.info("Resilience Engine - Cognition: AI decided to -> {}", action);
 
-        // Corrected method name from your ChakraOrchestrator.java
+        // Corrected method name from your ResilienceOrchestrator.java
         orchestrator.execute(action.name());
     }
 

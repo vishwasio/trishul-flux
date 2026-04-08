@@ -1,7 +1,7 @@
-package io.trishul.flux.chakra.cognitive;
+package io.trishul.flux.orchestrator;
 
-import io.trishul.flux.core.execution.FluxLimiter;
-import io.trishul.flux.core.execution.MockLoadBalancer;
+import io.trishul.flux.core.ratelimiter.FluxLimiter;
+import io.trishul.flux.infra.MockLoadBalancer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ChakraOrchestrator {
+public class ResilienceOrchestrator {
 
     private final FluxLimiter limiter;
     private final MockLoadBalancer loadBalancer;

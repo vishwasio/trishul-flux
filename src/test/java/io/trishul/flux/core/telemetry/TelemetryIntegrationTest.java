@@ -1,6 +1,6 @@
 package io.trishul.flux.core.telemetry;
 
-import io.trishul.flux.core.limiter.LimiterMetrics;
+import io.trishul.flux.core.ratelimiter.LimiterMetrics;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

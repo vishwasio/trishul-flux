@@ -1,4 +1,4 @@
-package io.trishul.flux.core.execution;
+package io.trishul.flux.infra;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

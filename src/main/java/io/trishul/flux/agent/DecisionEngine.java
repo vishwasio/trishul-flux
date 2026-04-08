@@ -1,4 +1,4 @@
-package io.trishul.flux.chakra.cognitive;
+package io.trishul.flux.agent;
 
 import io.trishul.flux.core.telemetry.TelemetrySnapshot;
 import lombok.RequiredArgsConstructor;
@@ -8,19 +8,19 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ReasoningEngine {
+public class DecisionEngine {
 
-    private final OllamaClient ollamaClient;
-    private final ChakraResponseParser parser;
+    private final ModelClient modelClient;
+    private final ResponseInterpreter parser;
 
     // system snapshot into deterministic action.
-    public ChakraAction decideMitigation(TelemetrySnapshot snapshot) {
+    public ActionPlan decideMitigation(TelemetrySnapshot snapshot) {
         String prompt = constructPrompt(snapshot);
 
         log.info("Control Plane: Reasoning about system state [{}] ", snapshot.status());
-        String rawResponse = ollamaClient.chat(prompt);
+        String rawResponse = modelClient.chat(prompt);
 
-        ChakraAction action = parser.parse(rawResponse);
+        ActionPlan action = parser.parse(rawResponse);
         log.info("Control Plane: Decision formulated -> {}", action);
 
         return action;

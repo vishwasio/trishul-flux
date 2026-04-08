@@ -1,4 +1,4 @@
-package io.trishul.flux.chakra.cognitive;
+package io.trishul.flux.agent;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -9,12 +9,12 @@ import java.util.Map;
 
 @Slf4j
 @Component
-public class OllamaClient {
+public class ModelClient {
 
     private final RestClient restClient;
     private static final String OLLAMA_URL = "http://localhost:11434/api/generate";
 
-    public OllamaClient() {
+    public ModelClient() {
         this.restClient = RestClient.create();
     }
 
