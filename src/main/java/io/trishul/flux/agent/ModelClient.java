@@ -3,8 +3,8 @@ package io.trishul.flux.agent;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import lombok.extern.slf4j.Slf4j;
-
 import java.util.Map;
 
 @Slf4j
@@ -13,21 +13,27 @@ public class ModelClient {
 
     private final RestClient restClient;
     private static final String OLLAMA_URL = "http://localhost:11434/api/generate";
+    private static final String MODEL_NAME = "qwen2.5-coder:0.5b";
 
     public ModelClient() {
-        this.restClient = RestClient.create();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);  // 5 seconds to connect
+        factory.setReadTimeout(60000);    // 60 seconds to "think" - critical for 0.5B model
+
+        this.restClient = RestClient.builder()
+                .requestFactory(factory)
+                .build();
     }
 
-    // using stream: false to get a single consolidated response.
     public String chat(String prompt) {
         try {
             Map<String, Object> body = Map.of(
-                    "model", "qwen2.5-coder:0.5b",
+                    "model", MODEL_NAME,
                     "prompt", prompt,
                     "stream", false
             );
 
-            log.info("Control Plane: Sending request to 0.5B model...");
+            log.info("[ModelClient] Consulting AI (Waiting for reasoning)...");
 
             OllamaResponse response = restClient.post()
                     .uri(OLLAMA_URL)
@@ -36,13 +42,18 @@ public class ModelClient {
                     .retrieve()
                     .body(OllamaResponse.class);
 
-            return (response != null) ? response.response() : "No response from AI";
+            if (response != null && response.response() != null) {
+                return response.response().trim();
+            }
+
+            return "THROTTLE";
+
         } catch (Exception e) {
-            log.error("Control Plane: AI Connection failed. Ensure Ollama is running. Error: {}", e.getMessage());
-            return "AI_OFFLINE";
+            // this catches the ReadTimeoutException specifically
+            log.warn("[ModelClient] AI Reasoning stalled (CPU Contention). Error: {}", e.getMessage());
+            return "THROTTLE";
         }
     }
 
-    // Simple record to map Ollama's response JSON
     private record OllamaResponse(String response) {}
 }
