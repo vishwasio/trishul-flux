@@ -1,43 +1,50 @@
-package io.trishul.flux.chakra.cognitive;
+package io.trishul.flux.agent;
 
-import io.trishul.flux.agent.ActionPlan;
-import io.trishul.flux.agent.DecisionEngine;
 import io.trishul.flux.core.telemetry.TelemetrySnapshot;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.time.Instant;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
 class ReasoningTest {
 
-    @Autowired
+    @Mock
+    private ModelClient modelClient;
+
+    @Mock
+    private ResponseInterpreter parser;
+
+    @InjectMocks
     private DecisionEngine decisionEngine;
 
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
     @Test
-    void verifyAiDecisionLogic() {
-        // Mocking a Critical State (High CPU and Dropped Requests)
-        TelemetrySnapshot criticalSnapshot = new TelemetrySnapshot(
-                Instant.now(),
-                0.95, // 95% CPU
-                2048L * 1024 * 1024,
-                50,
-                TelemetrySnapshot.SystemStatus.CRITICAL,
-                120, // 120 Dropped requests
-                300
+    void testDecideActionWithHistory() {
+        // mock history window with 2 snapshots to allow trend calculation
+        TelemetrySnapshot snapshot = new TelemetrySnapshot(
+                Instant.now(), 85.0, 1024L, 10,
+                TelemetrySnapshot.SystemStatus.CRITICAL, 50, 100
         );
+        List<TelemetrySnapshot> history = List.of(snapshot, snapshot);
 
-        // Changed type from String to ActionPlan
-        ActionPlan decision = decisionEngine.decide(criticalSnapshot);
+        // mock AI response
+        when(modelClient.chat(anyString())).thenReturn("THROTTLE");
+        when(parser.parse("THROTTLE")).thenReturn(ActionPlan.THROTTLE);
 
-        System.out.println("AI Decision for Critical State: " + decision);
+        ActionPlan result = decisionEngine.decide(history);
 
-        assertNotNull(decision);
-        // Checking against the Enum values instead of String contains
-        assertTrue(decision == ActionPlan.THROTTLE || decision == ActionPlan.SCALE,
-                "AI should recommend THROTTLE or SCALE for a CRITICAL state");
+        assertEquals(ActionPlan.THROTTLE, result);
     }
 }

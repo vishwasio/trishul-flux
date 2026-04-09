@@ -16,6 +16,10 @@ spring:
           # Strict context limit to save RAM
           num-ctx: 2048
           temperature: 0.7
+gemini:
+  api:
+    key: # Key
+    name: # Key name
 
 management:
   endpoints:

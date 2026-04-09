@@ -4,6 +4,7 @@ import io.trishul.flux.core.telemetry.TelemetrySnapshot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Slf4j
@@ -11,51 +12,80 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DecisionEngine {
 
-    private final ModelClient modelClient;
+    private final GeminiModelClient modelClient; // Instead of private final ModelClient modelClient; To use gemini instead of ollama 0.5B
     private final ResponseInterpreter parser;
+    private int criticalStreak = 0;
 
     public ActionPlan decide(List<TelemetrySnapshot> history) {
         if (history.isEmpty()) return ActionPlan.MONITOR;
 
         TelemetrySnapshot current = history.get(0);
-        String trendAnalysis = calculateTrend(history);
 
-        String prompt = constructContextualPrompt(current, trendAnalysis);
+        // update escalation state based on CRITICAL status
+        if (current.status() == TelemetrySnapshot.SystemStatus.CRITICAL) {
+            criticalStreak++;
+        } else {
+            criticalStreak = 0;
+        }
 
-        log.info("[DecisionEngine] Analyzing trend: {}", trendAnalysis);
+        String trend = calculateTrend(history);
+
+        // selecting prompt based on the failure streak
+        String prompt = (criticalStreak >= 3)
+                ? constructEscalationPrompt(current, trend)
+                : constructContextualPrompt(current, trend);
+
+        if (criticalStreak >= 3) {
+            log.warn("[DecisionEngine] System in persistent failure (Streak: {}). Forcing escalation.", criticalStreak);
+        }
+
         String rawResponse = modelClient.chat(prompt);
-
         ActionPlan action = parser.parse(rawResponse);
-        log.info("[DecisionEngine] AI Reasoning Result -> {}", action);
+
+        // HARD OVERRIDE
+        // if the system is dying and the AI keeps suggesting THROTTLE, forcing a DRAIN.
+        if (criticalStreak >= 5 && (action == ActionPlan.THROTTLE || action == ActionPlan.MONITOR)) {
+            log.warn("[DecisionEngine] AI stuck in THROTTLE loop during crisis. Overriding to DRAIN.");
+            criticalStreak = 0;
+            return ActionPlan.DRAIN;
+        }
 
         return action;
     }
 
     private String calculateTrend(List<TelemetrySnapshot> history) {
-        if (history.size() < 2) return "STABLE (Insufficient data)";
-
+        if (history.size() < 2) return "STABLE";
         TelemetrySnapshot latest = history.get(0);
         TelemetrySnapshot oldest = history.get(history.size() - 1);
 
-        double cpuDelta = latest.cpuUsage() - oldest.cpuUsage();
-        long dropDelta = latest.droppedRequests() - oldest.droppedRequests();
+        String cpuDir = (latest.cpuUsage() > oldest.cpuUsage() + 5) ? "RISING" : "STABLE";
+        String dropDir = (latest.droppedRequests() > oldest.droppedRequests()) ? "INCREASING" : "DECREASING";
 
-        String cpuDir = cpuDelta > 5 ? "RISING" : (cpuDelta < -5 ? "FALLING" : "STABLE");
-        String dropDir = dropDelta > 0 ? "INCREASING" : "STABLE";
-
-        return String.format("CPU is %s, Rejection rate is %s", cpuDir, dropDir);
+        return String.format("CPU %s, DROPS %s", cpuDir, dropDir);
     }
 
     private String constructContextualPrompt(TelemetrySnapshot current, String trend) {
         return String.format(
-                "Context: %s. Current Status: %s. Metrics: CPU %.2f%%, Dropped: %d.\n" +
-                        "Instruction: Choose the best SRE action and respond with ONE WORD: \n" +
-                        "[MONITOR] - Health is good.\n" +
-                        "[THROTTLE] - Stress detected.\n" +
-                        "[SCALE] - High demand, system capable.\n" +
-                        "[DRAIN] - Critical failure, stop all traffic.\n" +
-                        "[REBOOT] - Total collapse, reset system history.",
-                trend, current.status(), current.cpuUsage(), current.droppedRequests()
+                "[SRE-SIGNAL]\n" +
+                        "STAT: %s\n" +
+                        "CPU: %.1f%%\n" +
+                        "DROP: %d\n" +
+                        "TRND: %s\n" +
+                        "CAP: 800\n" +
+                        "EXEC: [MONITOR, SCALE, THROTTLE, DRAIN]",
+                current.status(), current.cpuUsage(), current.droppedRequests(), trend
+        );
+    }
+
+    private String constructEscalationPrompt(TelemetrySnapshot current, String trend) {
+        return String.format(
+                "[EMERGENCY-PROTOCOL]\n" +
+                        "STREAK: %d FAILED CYCLES\n" +
+                        "DROP: %d\n" +
+                        "TREND: %s\n" +
+                        "NOTICE: THROTTLE IS INEFFECTIVE. YOU MUST STOP TRAFFIC OR RESET.\n" +
+                        "EXEC: [DRAIN, REBOOT]",
+                criticalStreak, current.droppedRequests(), trend
         );
     }
 }

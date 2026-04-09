@@ -17,13 +17,16 @@ public class TrafficSimulator {
 
     @Scheduled(fixedRate = 1000)
     public void generateTraffic() {
-        // Randomize traffic between 1 and 500 requests per second // changed to be b/w 1 and 800
-        // This forces the AI to handle both "Quiet" and "Overload" periods
         int burstSize = (int) (Math.random() * 800) + 1;
         long currentSuccess = 0;
         long currentFailure = 0;
 
         for (int i = 0; i < burstSize; i++) {
+            // yielding every 50 requests prevents the loop from hogging the CPU and allow the AI thread to receive its response.
+            if (i % 50 == 0) {
+                Thread.yield();
+            }
+
             if (loadBalancer.handleRequest()) {
                 successfulHits.incrementAndGet();
                 currentSuccess++;
